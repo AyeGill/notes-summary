@@ -10,6 +10,7 @@ import configparser
 import os
 import logging
 import requests
+import orgparse
 from bs4 import BeautifulSoup
 
 #setup: pip3 install beautifulsoup4
@@ -32,9 +33,11 @@ config.read(configfiles)
 try:
     TEST = config.getboolean("settings","Test",fallback=False)
     SHOW_EXTLINKS = config.getboolean("settings","ExternalLinks",fallback=True)
+    SHOW_NEWNOTES = config.getboolean("settings","NewNotes",fallback=True)
     MAILGUN_APIKEY = config.get("settings","MailgunApiKey")
     MAILGUN_DOMAIN = config.get("settings","MailgunDomain")
     TARGET_MAIL = config.get("settings","TargetMail")
+    NOTES_EXTENSION = config.get("settings","NotesExtension",fallback=".org")
     SENDER_NAME = config.get("settings","SenderName",fallback="Summary bot :)")
 except:
     logging.critical("Error reading config!")
@@ -160,6 +163,30 @@ def get_extlinks(lines):
     link_output = display_list("LINKS", linktexts)
     return link_output
 
+###############
+#New notes list
+###############
+
+newfile_regex = re.compile("b\/([^\n]*)\nnew file mode")
+
+def find_new_files(lines):
+    diff = "\n".join(lines)
+    newfiles = newfile_regex.findall(diff)
+    return newfiles
+
+def is_note(filename):
+    return (filename[-4:] == NOTES_EXTENSION)
+
+def get_title(filename):
+    org = orgparse.load(filename)
+    return org.get_property("title")
+
+def get_newnotes(lines):
+    newfiles = find_new_files(lines)
+    newnotenames = [get_title(f) for f in newfiles if is_note(f)]
+    return display_list("NEW NOTES",newnotenames)
+
+
 ######################
 #TYING THINGS TOGETHER
 ######################
@@ -167,5 +194,8 @@ def get_extlinks(lines):
 msg = ""
 if SHOW_EXTLINKS:
     msg += get_extlinks(diff_lines)
+
+if SHOW_NEWNOTES:
+    msg += get_newnotes(diff_lines)
 
 sendmail(msg)
