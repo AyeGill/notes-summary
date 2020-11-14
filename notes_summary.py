@@ -6,9 +6,10 @@
 import sys
 import re
 import urllib.request
-import requests
+import configparser
 import os
 import logging
+import requests
 from bs4 import BeautifulSoup
 
 #setup: pip3 install beautifulsoup4
@@ -16,8 +17,28 @@ from bs4 import BeautifulSoup
 #run this scrip on a cronjob in a git repo
 #Look at get_git_diff to see what you need to change if your git setup is weird
 
-#modify this to run in debugging mode
-TEST = False
+###############
+#LOADING CONFIG
+###############
+
+configfiles = ["notes-summary.ini",
+               ".notes-summary.ini",
+               "~/notes-summary.ini",
+               "~/.notes-summary.ini"] #add lines here to add config files
+configfiles += sys.argv[1:]
+config = configparser.ConfigParser()
+config.read(configfiles)
+
+try:
+    TEST = config.getboolean("settings","Test",fallback=False)
+    SHOW_EXTLINKS = config.getboolean("settings","ExternalLinks",fallback=True)
+    MAILGUN_APIKEY = config.get("settings","MailgunApiKey")
+    MAILGUN_DOMAIN = config.get("settings","MailgunDomain")
+    TARGET_MAIL = config.get("settings","TargetMail")
+    SENDER_NAME = config.get("settings","SenderName",fallback="Summary bot :)")
+except:
+    logging.critical("Error reading config!")
+    sys.exit()
 
 ###############
 #LOGGING SETUP
@@ -53,21 +74,19 @@ except:
     logging.critical("Mailgun config variables not readable. Program unable to run until these are set")
     sys.exit()
 
-name = "Notes robot" #The sender of the mail
-
 subject = "Your notes digest!"
 
-url = "https://api.mailgun.net/v3/" + mgdomain + "/messages"
-sender = name + " <mailgunbot@" + mgdomain + ">"
+mgurl = "https://api.mailgun.net/v3/" + MAILGUN_DOMAIN + "/messages"
+sender = SENDER_NAME + " <mailgun@" + MAILGUN_DOMAIN + ">"
 
 def sendmail(text):
     logging.info("Sending mail. Length of message: %i", len(text))
     r = requests.post(
-        url,
-        auth=("api",apikey),
+        mgurl,
+        auth=("api",MAILGUN_APIKEY),
         data={
             "from": sender,
-            "to": [targetmail],
+            "to": [TARGET_MAIL],
             "subject": subject,
             "text": text})
     return(r.text)
@@ -104,12 +123,6 @@ def display_list(title,ls):
 ###############
 
 
-#links regex defined by https:// followed by a string w no spaces, newlines
-#or "[]" - the latter to avoid capturing more than necessary in org contexts.
-extlink_regex = re.compile(r"https?:\/\/([^ \n\]\[]*)")
-
-links = []
-
 def find_title(url):
     try:
         soup = BeautifulSoup(urllib.request.urlopen(url), features='lxml')
@@ -122,24 +135,37 @@ def find_title(url):
         logging.warning("Undetermined error getting title of link: %s", url)
         return "[Error getting title]"
 
+
 def display_link(url):
     return (find_title(url).strip() + " : " + url)
+#links regex defined by https:// followed by a string w no spaces, newlines
+#or "[]" - the latter to avoid capturing more than necessary in org contexts.
+extlink_regex = re.compile(r"https?:\/\/([^ \n\]\[]*)")
 
-for line in diff_lines:
-    if(line[0] != '+'): #if we're not looking at an added line
-        continue #skip this line
+def get_extlinks(lines):
 
-    #Pull out links
+    links = []
 
-    match = extlink_regex.search(line)
-    if(match):
-        links.append(match.group(0))
+    for line in lines:
+        if(line[0] != '+'): #if we're not looking at an added line
+            continue #skip this line
+        #
+        #Pull out links
 
-linktexts = [display_link(url) for url in links]
-link_output = display_list("LINKS", linktexts)
+        match = extlink_regex.search(line)
+        if(match):
+            links.append(match.group(0))
+
+    linktexts = [display_link(url) for url in links]
+    link_output = display_list("LINKS", linktexts)
+    return link_output
 
 ######################
 #TYING THINGS TOGETHER
 ######################
 
-sendmail(link_output)
+msg = ""
+if SHOW_EXTLINKS:
+    msg += get_extlinks(diff_lines)
+
+sendmail(msg)
