@@ -42,7 +42,6 @@ try:
     SENDER_NAME = config.get("settings","SenderName",fallback="Summary bot :)")
 except:
     logging.critical("Error reading config!")
-    logging.critical(MAILGUN_APIKEY)
     sys.exit()
 
 ###############
