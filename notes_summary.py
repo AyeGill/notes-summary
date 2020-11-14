@@ -22,10 +22,10 @@ from bs4 import BeautifulSoup
 #LOADING CONFIG
 ###############
 
-configfiles = ["notes-summary.ini",
-               ".notes-summary.ini",
-               "~/notes-summary.ini",
-               "~/.notes-summary.ini"] #add lines here to add config files
+configfiles = [os.path.abspath("notes-summary.ini"),
+               os.path.abspath(".notes-summary.ini"),
+               os.path.expanduser("~/notes-summary.ini"),
+               os.path.expanduser("~/.notes-summary.ini")] #add lines here to add config files
 configfiles += sys.argv[1:]
 config = configparser.ConfigParser()
 config.read(configfiles)
@@ -42,6 +42,7 @@ try:
     SENDER_NAME = config.get("settings","SenderName",fallback="Summary bot :)")
 except:
     logging.critical("Error reading config!")
+    logging.critical(MAILGUN_APIKEY)
     sys.exit()
 
 ###############
@@ -68,15 +69,6 @@ logging.info("If you're seeing this, I'm running in debug mode")
 
 #This is set up for mailgun (mailgun.org)
 #Use your own setup if not
-
-#Store your info in env variables
-try:
-    apikey = os.environ['MAILGUN_API_KEY'] #your mailgun api key
-    mgdomain = os.environ['MAILGUN_DOMAIN'] #your mailgun domain
-    targetmail = os.environ['TARGET_EMAIL'] #the mail you want to send this to
-except:
-    logging.critical("Mailgun config variables not readable. Program unable to run until these are set")
-    sys.exit()
 
 subject = "Your notes digest!"
 
@@ -132,9 +124,10 @@ def find_title(url):
         soup = BeautifulSoup(urllib.request.urlopen(url), features='lxml')
         logging.info("Found title of link %s successfully", url)
         return soup.title.string
-    except urllib.error.URLError(r):
+    except urllib.error.URLError as r:
         logging.warning("Error getting title of link: %s", url)
         logging.warning("Error: %s", r)
+        return "[Error getting title]"
     except:
         logging.warning("Undetermined error getting title of link: %s", url)
         return "[Error getting title]"
@@ -168,20 +161,39 @@ def get_extlinks(lines):
 #New notes list
 ###############
 
-newfile_regex = re.compile("b\/([^\n]*)\nnew file mode")
+newfile_regex = re.compile("b\\/([^\\n]*)\\nnew file mode")
 
 def find_new_files(lines):
-    diff = "\n".join(lines)
+    logging.info("Identifying new files")
+    diff = "".join(lines)
     newfiles = newfile_regex.findall(diff)
+    logging.info("New files: %s", newfiles)
     return newfiles
 
 def is_note(filename):
     return (filename[-4:] == NOTES_EXTENSION)
 
 def get_title(filename):
-    org = orgparse.load(filename)
-    if org.get_property("title"):
-        return org.get_property("title")
+    logging.info("Getting title of %s", filename)
+    try:
+        org = orgparse.load(filename)
+    except FileNotFoundError as e:
+        logging.info("FileNotFoundError: %s", e)
+        logging.info("looking in root dir")
+        org = orgparse.load(os.path.basename(filename))
+    except e:
+        logging.info("Error: %s", e)
+    try:
+        x = org.get_file_property("title")
+        if x:
+            return x
+    except RuntimeError as e:
+        logging.info("Trying to see if title was list")
+        x = org.get_file_property_list("title")
+        if x:
+            return ": ".join(x)
+    except _:
+        logging.info("Unrecognized error getting title, falling back")
     return filename #fallback
 
 def get_newnotes(lines):
@@ -199,21 +211,23 @@ def get_newnotes(lines):
 # We do this by going through lines and maintaining the file we're in as state.
 
 diff_start_regex = re.compile("diff --git [^\n]* b\/([^\n]*)")
-file_link_regex = re.compile("\[\[file:(.*)\]\[(.*)\]\]")
+file_link_regex = re.compile("\[\[file:(.*?)\]\[(.*)\]\]")
 
 def get_new_int_links(lines):
     curr_file = None
     intlinks = []
     for line in lines:
-        f = diff_start.regex.match(line)
+        f = diff_start_regex.match(line)
         if f:
-            curr_file = r.group(1)
+            curr_file = f.group(1)
+            logging.info("Now in file %s", curr_file)
 
-        m = file_link_regex.match(line)
+        m = file_link_regex.search(line)
         if m:
-            linked_file = r.group(1)
-            alias = r.group(2)
+            linked_file = m.group(1)
+            alias = m.group(2)
             intlinks.append((curr_file,linked_file,alias))
+            logging.info("Adding link %s %s %s", curr_file, linked_file, alias)
     return intlinks
 
 def get_notelinks(lines):
