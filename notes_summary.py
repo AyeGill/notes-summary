@@ -40,6 +40,7 @@ try:
     TARGET_MAIL = config.get("settings","TargetMail")
     NOTES_EXTENSION = config.get("settings","NotesExtension",fallback=".org")
     SENDER_NAME = config.get("settings","SenderName",fallback="Summary bot :)")
+    LOGFILE = config.get("settings","LogFile",fallback="notes_summary_log.txt")
 except:
     logging.critical("Error reading config!")
     sys.exit()
@@ -51,7 +52,7 @@ except:
 
 #Log to stdout when testing, else log to file
 if not TEST:
-    logging.basicConfig(filename="scandiff.log",
+    logging.basicConfig(filename=LOGFILE,
                    level=logging.WARNING,
                    format='%(asctime)s %(message)s')
 else:
