@@ -52,7 +52,6 @@ except:
 #Log to stdout when testing, else log to file
 if not TEST:
     logging.basicConfig(filename="scandiff.log",
-                   encoding="utf-8",
                    level=logging.WARNING,
                    format='%(asctime)s %(message)s')
 else:
