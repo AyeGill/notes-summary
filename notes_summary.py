@@ -41,6 +41,7 @@ try:
     NOTES_EXTENSION = config.get("settings","NotesExtension",fallback=".org")
     SENDER_NAME = config.get("settings","SenderName",fallback="Summary bot :)")
     LOGFILE = config.get("settings","LogFile",fallback="notes_summary_log.txt")
+    GIT_MAIN_BRANCH = config.get("settings","GitMainBranch",fallback="master")
 except:
     logging.critical("Error reading config!")
     sys.exit()
@@ -96,12 +97,12 @@ def get_git_diff():
     logging.info("Getting git diff")
     #I actually want to save this in the log files
     logging.warning("Current commit: %s", os.popen("git show").readlines()[0])
-
-    diff = os.popen("git diff origin master").readlines()
+    os.popen("git fetch")
+    diff = os.popen("git diff origin/"+GIT_MAIN_BRANCH+" "+GIT_MAIN_BRANCH).readlines()
     if TEST:
-        diff = os.popen("git diff $(git rev-list -n1 --before \"7 days ago\" origin/master)").readlines()
-    pull = os.popen("git pull").read()
-    logging.info("Result of pull: %s", pull)
+        diff = os.popen("git diff $(git rev-list -n1 --before \"7 days ago\" origin/"+GIT_MAIN_BRANCH+")").readlines()
+    pull = os.popen("git merge").read()
+    logging.info("Result of merge: %s", pull)
     return diff
 
 diff_lines = get_git_diff()
@@ -249,4 +250,5 @@ if SHOW_NEWNOTES:
 
 if SHOW_NOTELINKS:
     msg += get_notelinks(diff_lines)
+logging.warning("Sending mail now. Length = %i", len(msg))
 sendmail(msg)
