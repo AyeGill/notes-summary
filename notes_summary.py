@@ -165,13 +165,9 @@ def get_extlinks(lines):
 newfile_regex = re.compile("b\\/([^\\n]*)\\nnew file mode")
 
 def find_new_files(lines):
-    newfiles = []
+    diff = "".join(lines)
     logging.info("Identifying new files")
-    for line in lines:
-        if(line[0] != '+'):
-            continue
-
-        newfiles += newfile_regex.findall(diff)
+    newfiles = newfile_regex.findall(diff)
     logging.info("New files: %s", newfiles)
     return newfiles
 
@@ -226,7 +222,8 @@ def get_new_int_links(lines):
         if f:
             curr_file = f.group(1)
             logging.info("Now in file %s", curr_file)
-
+        if (line[0] != '+'):
+            continue
         m = file_link_regex.search(line)
         if m:
             linked_file = m.group(1)
