@@ -97,7 +97,7 @@ def get_git_diff():
     #I actually want to save this in the log files
     logging.warning("Current commit: %s", os.popen("git show").readlines()[0])
 
-    diff = os.popen("git diff master origin/master").readlines()
+    diff = os.popen("git diff origin master").readlines()
     if TEST:
         diff = os.popen("git diff $(git rev-list -n1 --before \"7 days ago\" origin/master)").readlines()
     pull = os.popen("git pull").read()
