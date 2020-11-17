@@ -100,10 +100,10 @@ def get_git_diff():
     fetch = os.popen("git fetch").read()
     logging.info("Result of fetch: %s", fetch)
     diff = os.popen("git diff origin/"+GIT_MAIN_BRANCH+" "+GIT_MAIN_BRANCH).readlines()
-    if TEST:
-        diff = os.popen("git diff $(git rev-list -n1 --before \"7 days ago\" origin/"+GIT_MAIN_BRANCH+")").readlines()
-    pull = os.popen("git merge").read()
-    logging.info("Result of merge: %s", pull)
+    #if TEST:
+    #    diff = os.popen("git diff $(git rev-list -n1 --before \"7 days ago\" origin/"+GIT_MAIN_BRANCH+")").readlines()
+    merge = os.popen("git merge").read()
+    logging.info("Result of merge: %s", merge)
     return diff
 
 diff_lines = get_git_diff()
@@ -181,7 +181,7 @@ def get_title(filename):
     except FileNotFoundError as e:
         logging.info("FileNotFoundError: %s", e)
         logging.info("looking in root dir")
-        org = orgparse.load(os.path.basename(filename))
+        return get_title(os.path.basename(filename))
     except e:
         logging.info("Error: %s", e)
     try:
