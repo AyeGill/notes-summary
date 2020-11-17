@@ -100,6 +100,8 @@ def get_git_diff():
     fetch = os.popen("git fetch").read()
     logging.info("Result of fetch: %s", fetch)
     diff = os.popen("git diff origin/"+GIT_MAIN_BRANCH+" "+GIT_MAIN_BRANCH).readlines()
+    logging.info("Diff:")
+    logging.info("".join(diff))
     #if TEST:
     #    diff = os.popen("git diff $(git rev-list -n1 --before \"7 days ago\" origin/"+GIT_MAIN_BRANCH+")").readlines()
     merge = os.popen("git merge").read()
@@ -153,6 +155,8 @@ def get_extlinks(lines):
         match = extlink_regex.search(line)
         if(match):
             links.append(match.group(0))
+
+    logging.info("External links: %s", links)
 
     linktexts = [display_link(url) for url in links]
     link_output = display_list("LINKS", linktexts)
