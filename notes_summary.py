@@ -165,9 +165,13 @@ def get_extlinks(lines):
 newfile_regex = re.compile("b\\/([^\\n]*)\\nnew file mode")
 
 def find_new_files(lines):
+    newfiles = []
     logging.info("Identifying new files")
-    diff = "".join(lines)
-    newfiles = newfile_regex.findall(diff)
+    for line in lines:
+        if(line[0] != '+'):
+            continue
+
+        newfiles += newfile_regex.findall(diff)
     logging.info("New files: %s", newfiles)
     return newfiles
 
