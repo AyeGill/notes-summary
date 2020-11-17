@@ -99,7 +99,7 @@ def get_git_diff():
     logging.warning("Current commit: %s", os.popen("git show").readlines()[0])
     fetch = os.popen("git fetch").read()
     logging.info("Result of fetch: %s", fetch)
-    diff = os.popen("git diff origin/"+GIT_MAIN_BRANCH+" "+GIT_MAIN_BRANCH).readlines()
+    diff = os.popen("git diff " + GIT_MAIN_BRANCH + " origin/"+GIT_MAIN_BRANCH).readlines()
     logging.info("Diff:")
     logging.info("".join(diff))
     #if TEST:
