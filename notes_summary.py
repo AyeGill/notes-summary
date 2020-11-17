@@ -97,7 +97,8 @@ def get_git_diff():
     logging.info("Getting git diff")
     #I actually want to save this in the log files
     logging.warning("Current commit: %s", os.popen("git show").readlines()[0])
-    os.popen("git fetch")
+    fetch = os.popen("git fetch").read()
+    logging.info("Result of fetch: %s", fetch)
     diff = os.popen("git diff origin/"+GIT_MAIN_BRANCH+" "+GIT_MAIN_BRANCH).readlines()
     if TEST:
         diff = os.popen("git diff $(git rev-list -n1 --before \"7 days ago\" origin/"+GIT_MAIN_BRANCH+")").readlines()
