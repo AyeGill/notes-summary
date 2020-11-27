@@ -23,11 +23,14 @@ then pulling the remote copy. This obviously means you can't mess around with th
 In the future this may be improved by having the script maintain a record of the commit last time it ran, and comparing that to the current commit.
 
 ## TODO
+- [ ] BUG! Add newlines to message before each headline (so they're not on the same line as prev section)
+- [ ] BUG! Fix the failures to fetch website title on server but not on laptop
 - [ ] Add support for using your own SMTP stuff.
   - See eg https://realpython.com/python-send-email/ for how to set this up using gmail.
 - [ ] Add "interesting new *contents* to the email, e.g. all the stuff you wrote in your journal, or the contents of certain new files.
 - [ ] Add support for other note formats.
 - [ ] Record commits instead of using local/remote to remember the state
+
 
 ## Setup
 - Before you use this script, make sure you have the following things:
