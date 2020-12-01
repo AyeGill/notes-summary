@@ -128,11 +128,12 @@ def find_title(url):
         logging.info("Found title of link %s successfully", url)
         return soup.title.string
     except urllib.error.URLError as r:
-        logging.warning("Error getting title of link: %s", url)
+        logging.warning("URLError getting title of link: %s", url)
         logging.warning("Error: %s", r)
         return "[Error getting title]"
-    except:
+    except Exception as e:
         logging.warning("Undetermined error getting title of link: %s", url)
+        logging.warning("Error: %s", e)
         return "[Error getting title]"
 
 
@@ -250,11 +251,15 @@ def get_notelinks(lines):
 msg = ""
 if SHOW_EXTLINKS:
     msg += get_extlinks(diff_lines)
+    msg += "\n\n"
 
 if SHOW_NEWNOTES:
     msg += get_newnotes(diff_lines)
+    msg += "\n\n"
 
 if SHOW_NOTELINKS:
     msg += get_notelinks(diff_lines)
+    msg += "\n\n"
+
 logging.warning("Sending mail now. Length = %i", len(msg))
 sendmail(msg)
